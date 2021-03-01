@@ -117,14 +117,19 @@ router.get('/generate-data', async function(req, res, next) {
 })
 
 /* History */
-router.get('/history', function(req, res, next) {
+router.get('/history', async function(req, res, next) {
   var result = false;
 
 var moodsHistory = await userModel.findById('603cc2c9ea48e108447d1e3c')   
-.populate('history')  
+.populate({
+  path: 'history',
+  match: {date: {$gte: '2021-02-27'}},
+  populate: {path: 'activity'}
+})
 .exec();
 
-console.log(moodsHistory)
+console.log('history', moodsHistory)
+console.log('activity', moodsHistory.activity)
 
   /* récupère tous les mood/activities + result = true*/
   res.json(result);
