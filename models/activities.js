@@ -8,4 +8,4 @@ var activitySchema = mongoose.Schema({
 
 var activityModel = mongoose.model('activities', activitySchema)
 
-module.exports = {activityModel}
+module.exports = activityModel
