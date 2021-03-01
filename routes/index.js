@@ -9,6 +9,7 @@ var uid2 = require('uid2')
 const activityList = [{category: 'sport', name: 'football'}, {category: 'social', name: 'boire un verre'}, {category: 'culture', name: 'cinema'}, {category: 'culture', name: 'piano'}, {category: 'sport', name: 'piscine'}]
 
 
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
@@ -115,6 +116,19 @@ router.get('/generate-data', async function(req, res, next) {
    res.render('index', { title: 'Express' });
 })
 
+/* History */
+router.get('/history', function(req, res, next) {
+  var result = false;
+
+var moodsHistory = await userModel.findById('603cc2c9ea48e108447d1e3c')   
+.populate('history')  
+.exec();
+
+console.log(moodsHistory)
+
+  /* récupère tous les mood/activities + result = true*/
+  res.json(result);
+});
 
 
 module.exports = router;
