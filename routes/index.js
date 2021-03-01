@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
@@ -35,6 +36,13 @@ router.get('/fun-fact', function(req, res, next) {
 /* History */
 router.get('/history', function(req, res, next) {
   var result = false;
+
+var moodsHistory = await userModel.findById('603cc2c9ea48e108447d1e3c')   
+.populate('history')  
+.exec();
+
+console.log(moodsHistory)
+
   /* récupère tous les mood/activities + result = true*/
   res.json(result);
 });
