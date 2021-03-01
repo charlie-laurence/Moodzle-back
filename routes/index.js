@@ -117,22 +117,28 @@ router.get('/generate-data', async function(req, res, next) {
 })
 
 /* History */
-router.get('/history', async function(req, res, next) {
+router.post('/history', async function(req, res, next) {
   var result = false;
+  var searchDate = new Date('2020-02-27'); // sera remplacé par req.body.dateDebut
+  var dadate = new Date('2020-03-01') // sera remplacé par req.body.dateFin
 
-var moodsHistory = await userModel.findById('603cc2c9ea48e108447d1e3c')   
+// Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
+var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
 .populate({
-  path: 'history',
-  match: {date: {$gte: '2021-02-27'}},
-  populate: {path: 'activity'}
-})
+path : 'history',
+match : {date : {$gte: searchDate, $lte: dadate} } ,
+  populate : {path : 'activity'}
+})  
 .exec();
 
-console.log('history', moodsHistory)
-console.log('activity', moodsHistory.activity)
+console.log('history',moodsHistory.history)
+console.log('activity',moodsHistory.history[0].activity)
+
+// var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
+// var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
 
   /* récupère tous les mood/activities + result = true*/
-  res.json(result);
+  res.json(result, moodsHistory);
 });
 
 
