@@ -138,7 +138,7 @@ console.log('activity',moodsHistory.history[0].activity)
 // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
 
   /* récupère tous les mood/activities + result = true*/
-  res.json(result, moodsHistory);
+  res.json(moodsHistory);
 });
 
 
