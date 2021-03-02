@@ -16,12 +16,8 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/load-activities', async function(req, res, next) {
-  var result = false;
   var activityDataList = await activityModel.find();
-  if (activityDataList) {
-    result = true;
-  }
-  res.json({result , activityDataList});
+  res.json(activityDataList);
 });
 
 /* Enregistrement du userName */
