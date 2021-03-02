@@ -15,31 +15,36 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-/* Enregistrement du userName */
+/* Enregistrement du userName et du token en BDD */
 
 router.post('/sign-up', async function(req, res, next) {
   
   var result = false;
+  var token = null;
 
-  // var token = null;
+ const data = await userModel.findOne({
+ username: req.body.usernameFromFront,
+ token: req.body.token
+ });
+ console.log(data)
 
-  // const data = await userModel.findOne({
-  //   username: req.body.usernameFromFront
-  // });
+if(data === null){ 
 
-  var newUser = new userModel({
+    var newUser = new userModel({
       username: req.body.usernameFromFront,
+      token: uid2(32),
     });
+    // console.log("usernameFromFront : ", req.body.usernameFromFront)
 
   var saveUser = await newUser.save();
 
     if(saveUser){
       result = true;
-    }
-  
-  /*enregistrement en bdd + result = true*/
-  res.json(result, saveUser);
-  console.log('result :', result, 'saveUser :', saveUser)
+      token = saveUser.token;
+    }}
+ 
+  res.json({result, saveUser, token});
+  // console.log(token)
 
 });
 
