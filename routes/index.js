@@ -16,13 +16,32 @@ router.get('/', function(req, res, next) {
 });
 
 /* Enregistrement du userName */
-// router.post('/sign-in', function(req, res, next) {
-//   var result = false;
-//   //var token = uid2(32);
-//   var userName = req.body.username;
-//   /*enregistrement en bdd + result = true*/
-//   res.json(result, token);
-// });
+
+router.post('/sign-up', async function(req, res, next) {
+  
+  var result = false;
+
+  // var token = null;
+
+  // const data = await userModel.findOne({
+  //   username: req.body.usernameFromFront
+  // });
+
+  var newUser = new userModel({
+      username: req.body.usernameFromFront,
+    });
+
+  var saveUser = await newUser.save();
+
+    if(saveUser){
+      result = true;
+    }
+  
+  /*enregistrement en bdd + result = true*/
+  res.json(result, saveUser);
+  console.log('result :', result, 'saveUser :', saveUser)
+
+});
 
 // /* Enregistrement de l'humeur/activités */
 // router.post('/mood', function(req, res, next) {
