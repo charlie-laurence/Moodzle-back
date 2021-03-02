@@ -119,23 +119,44 @@ router.get('/generate-data', async function(req, res, next) {
 /* History */
 router.post('/history', async function(req, res, next) {
   var result = false;
-  var searchDate = new Date('2020-02-27'); // sera remplacé par req.body.dateDebut
-  var dadate = new Date('2020-03-01') // sera remplacé par req.body.dateFin
+  var date = new Date(req.body.startdate);
+  var filterType = req.body.type
 
+  switch (filterType) {
+    case 'month':
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      break;
+    case 'week':
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 1)
+      var lastDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 7)
+      break;
+    case 'year':
+      var firstDay = new Date(date.getFullYear(), 0, 1);
+      var lastDay = new Date(date.getFullYear(), 11, 31);
+      break;
+    default:
+      var firstDay = date;
+      var lastDay = date;
+      break; 
+  }
+  
+  console.log(firstDay)
+  console.log(lastDay)
 // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
-var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
-.populate({
-path : 'history',
-match : {date : {$gte: searchDate, $lte: dadate} } ,
-  populate : {path : 'activity'}
-})  
-.exec();
 
-console.log('history',moodsHistory.history)
-console.log('activity',moodsHistory.history[0].activity)
+  var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
+  .populate({
+    path : 'history',
+    match : {date : {$gte: firstDay, $lte: lastDay} } ,
+    populate : {path : 'activity'}
+  }).exec();
 
-// var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
-// var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
+  // console.log('history',moodsHistory.history)
+  // console.log('activity',moodsHistory.history[0].activity)
+
+  // var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
+  // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
 
   /* récupère tous les mood/activities + result = true*/
   res.json(moodsHistory);
