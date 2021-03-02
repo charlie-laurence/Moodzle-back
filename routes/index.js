@@ -16,32 +16,13 @@ router.get('/', function(req, res, next) {
 });
 
 /* Enregistrement du userName */
-
-router.post('/sign-up', async function(req, res, next) {
-  
-  var result = false;
-
-  // var token = null;
-
-  // const data = await userModel.findOne({
-  //   username: req.body.usernameFromFront
-  // });
-
-  var newUser = new userModel({
-      username: req.body.usernameFromFront,
-    });
-
-  var saveUser = await newUser.save();
-
-    if(saveUser){
-      result = true;
-    }
-  
-  /*enregistrement en bdd + result = true*/
-  res.json(result, saveUser);
-  console.log('result :', result, 'saveUser :', saveUser)
-
-});
+// router.post('/sign-in', function(req, res, next) {
+//   var result = false;
+//   //var token = uid2(32);
+//   var userName = req.body.username;
+//   /*enregistrement en bdd + result = true*/
+//   res.json(result, token);
+// });
 
 // /* Enregistrement de l'humeur/activités */
 // router.post('/mood', function(req, res, next) {
@@ -138,23 +119,44 @@ router.get('/generate-data', async function(req, res, next) {
 /* History */
 router.post('/history', async function(req, res, next) {
   var result = false;
-  var searchDate = new Date('2020-02-27'); // sera remplacé par req.body.dateDebut
-  var dadate = new Date('2020-03-01') // sera remplacé par req.body.dateFin
+  var date = new Date(req.body.startdate);
+  var filterType = req.body.type
 
+  switch (filterType) {
+    case 'month':
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      break;
+    case 'week':
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 1)
+      var lastDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 7)
+      break;
+    case 'year':
+      var firstDay = new Date(date.getFullYear(), 0, 1);
+      var lastDay = new Date(date.getFullYear(), 11, 31);
+      break;
+    default:
+      var firstDay = date;
+      var lastDay = date;
+      break; 
+  }
+  
+  console.log(firstDay)
+  console.log(lastDay)
 // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
+
   var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
   .populate({
-  path : 'history',
-  match : {date : {$gte: searchDate, $lte: dadate} } ,
+    path : 'history',
+    match : {date : {$gte: firstDay, $lte: lastDay} } ,
     populate : {path : 'activity'}
-  })  
-  .exec();
+  }).exec();
 
-// console.log('history',moodsHistory.history)
-// console.log('activity',moodsHistory.history[0].activity)
+  // console.log('history',moodsHistory.history)
+  // console.log('activity',moodsHistory.history[0].activity)
 
-// var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
-// var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
+  // var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
+  // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
 
   /* récupère tous les mood/activities + result = true*/
   res.json(moodsHistory);
