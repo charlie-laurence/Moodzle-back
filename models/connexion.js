@@ -7,7 +7,7 @@ var options = {
     useUnifiedTopology : true
 }
 
-var bdd = 'moodzle'
+var bdd = 'Moodzle'
 var mdpbdd = 'Moodz2021!'
 //     // --------------------- BDD -----------------------------------------------------
     mongoose.connect(`mongodb+srv://moodzle:${mdpbdd}@cluster0.erwv6.mongodb.net/${bdd}?retryWrites=true&w=majority`,

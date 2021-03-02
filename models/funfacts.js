@@ -9,4 +9,4 @@ var funfactSchema = mongoose.Schema({
 
 var funfactModel = mongoose.model('funfact', funfactSchema)
 
-module.exports = {funfactModel}
+module.exports = funfactModel

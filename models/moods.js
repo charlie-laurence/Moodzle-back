@@ -9,4 +9,4 @@ var moodSchema = mongoose.Schema({
 
 var moodModel = mongoose.model('moods', moodSchema)
 
-module.exports = {moodModel}
+module.exports = moodModel
