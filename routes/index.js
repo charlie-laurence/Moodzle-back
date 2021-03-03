@@ -15,6 +15,11 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+router.get('/load-activities', async function(req, res, next) {
+  var activityDataList = await activityModel.find();
+  res.json(activityDataList);
+});
+
 /* Enregistrement du userName */
 // router.post('/sign-in', function(req, res, next) {
 //   var result = false;
