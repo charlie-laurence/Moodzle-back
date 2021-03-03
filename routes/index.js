@@ -136,7 +136,7 @@ router.post('/history', async function(req, res, next) {
       var lastDay = new Date(date.getFullYear(), 11, 31);
       break;
     default:
-      var firstDay = date;
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7);
       var lastDay = date;
       break; 
   }
@@ -151,14 +151,6 @@ router.post('/history', async function(req, res, next) {
     match : {date : {$gte: firstDay, $lte: lastDay} } ,
     populate : {path : 'activity'}
   }).exec();
-
-  // console.log('history',moodsHistory.history)
-  // console.log('activity',moodsHistory.history[0].activity)
-
-  // var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
-  // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
-
-  /* récupère tous les mood/activities + result = true*/
   res.json(moodsHistory);
 });
 
