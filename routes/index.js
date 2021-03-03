@@ -26,10 +26,9 @@ router.post('/sign-up', async function(req, res, next) {
  username: req.body.usernameFromFront,
  token: req.body.token
  });
- console.log(data)
-
+ 
 if(data === null){ 
-
+  
     var newUser = new userModel({
       username: req.body.usernameFromFront,
       token: uid2(32),
