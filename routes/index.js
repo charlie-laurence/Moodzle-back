@@ -24,14 +24,37 @@ router.get("/load-activities", async function (req, res, next) {
   res.json(activityDataList);
 });
 
-/* Enregistrement du userName */
-// router.post('/sign-in', function(req, res, next) {
-//   var result = false;
-//   //var token = uid2(32);
-//   var userName = req.body.username;
-//   /*enregistrement en bdd + result = true*/
-//   res.json(result, token);
-// });
+/* Enregistrement du userName et du token en BDD */
+
+router.post('/sign-up', async function(req, res, next) {
+  
+  var result = false;
+  var token = null;
+
+ const data = await userModel.findOne({
+ username: req.body.usernameFromFront,
+ token: req.body.token
+ });
+ 
+if(data === null){ 
+  
+    var newUser = new userModel({
+      username: req.body.usernameFromFront,
+      token: uid2(32),
+    });
+    // console.log("usernameFromFront : ", req.body.usernameFromFront)
+
+  var saveUser = await newUser.save();
+
+    if(saveUser){
+      result = true;
+      token = saveUser.token;
+    }}
+ 
+  res.json({result, saveUser, token});
+  // console.log(token)
+
+});
 
 // /* Enregistrement de l'humeur/activités */
 router.post("/save-mood", async (req, res, next) => {
@@ -165,10 +188,11 @@ router.post("/history", async function (req, res, next) {
       var lastDay = new Date(date.getFullYear(), 11, 31);
       break;
     default:
-      var firstDay = date;
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7);
       var lastDay = date;
       break;
   }
+<<<<<<< HEAD
 
   console.log(firstDay);
   console.log(lastDay);
@@ -190,6 +214,19 @@ router.post("/history", async function (req, res, next) {
   // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
 
   /* récupère tous les mood/activities + result = true*/
+=======
+  
+  console.log(firstDay)
+  console.log(lastDay)
+// Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
+
+  var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
+  .populate({
+    path : 'history',
+    match : {date : {$gte: firstDay, $lte: lastDay} } ,
+    populate : {path : 'activity'}
+  }).exec();
+>>>>>>> b8a55e03ba9e63396ada787ae75a44b4c8cca636
   res.json(moodsHistory);
 });
 
