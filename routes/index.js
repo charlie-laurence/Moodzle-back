@@ -56,13 +56,37 @@ if(data === null){
 
 });
 
-// /* Enregistrement de l'humeur/activités */
+/* Enregistrement de l'humeur/activités :*/
 router.post("/save-mood", async (req, res, next) => {
-  const { mood, selectActivity } = req.body;
-  console.log(mood, selectActivity);
-  //var token = user.token;
-  /*Récupère le score du mood (enregistré dans le store) et les activités + enregistrement en bdd + result = true*/
-  res.json({ msg: "requête bien reçue et exécutée" });
+  const mood = req.body.mood;
+  const activity = req.body.activitySelection;
+  var token = "UvEs7slg2Wl54GO2QHESZko0DheTgpPF"; //req.body.token;
+
+  // récupérer les id des activités :
+  async function getAllId(activity) {
+      let idTab = [];
+      for (var i = 0 ; i<activity.length ; i++) {
+        let activityFromMongo = await activityModel.findOne({name:activity[i].name, category:activity[i].category});
+        let id = activityFromMongo._id;
+        idTab.push(id);
+      }
+    return idTab
+  }
+  let activitiesId = await getAllId(activity);
+
+  // enregistrement du mood en bdd :
+  const newMood = new moodModel({
+    date: new Date(),
+    mood_score: mood,
+    activity: activitiesId
+  });
+  const savedMood = await newMood.save();
+  console.log(savedMood._id);
+  // on récupère l'id du mood créé :
+  const moodId = savedMood._id;
+  // on update le user en ajoutant l'id du mood/activités :
+  const updateUser = await userModel.updateOne({token}, {$push: {history : moodId}});
+  res.json({ msg: "requête bien reçue et exécutée" , moodId , updateUser });
 });
 
 // Enregistrement Nouvelle Activité en base de données
@@ -192,29 +216,6 @@ router.post("/history", async function (req, res, next) {
       var lastDay = date;
       break;
   }
-<<<<<<< HEAD
-
-  console.log(firstDay);
-  console.log(lastDay);
-  // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
-
-  var moodsHistory = await userModel
-    .findOne({ token: "fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1" })
-    .populate({
-      path: "history",
-      match: { date: { $gte: firstDay, $lte: lastDay } },
-      populate: { path: "activity" },
-    })
-    .exec();
-
-  // console.log('history',moodsHistory.history)
-  // console.log('activity',moodsHistory.history[0].activity)
-
-  // var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
-  // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
-
-  /* récupère tous les mood/activities + result = true*/
-=======
   
   console.log(firstDay)
   console.log(lastDay)
@@ -226,7 +227,6 @@ router.post("/history", async function (req, res, next) {
     match : {date : {$gte: firstDay, $lte: lastDay} } ,
     populate : {path : 'activity'}
   }).exec();
->>>>>>> b8a55e03ba9e63396ada787ae75a44b4c8cca636
   res.json(moodsHistory);
 });
 
