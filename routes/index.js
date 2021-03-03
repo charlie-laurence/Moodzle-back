@@ -15,14 +15,37 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-/* Enregistrement du userName */
-// router.post('/sign-in', function(req, res, next) {
-//   var result = false;
-//   //var token = uid2(32);
-//   var userName = req.body.username;
-//   /*enregistrement en bdd + result = true*/
-//   res.json(result, token);
-// });
+/* Enregistrement du userName et du token en BDD */
+
+router.post('/sign-up', async function(req, res, next) {
+  
+  var result = false;
+  var token = null;
+
+ const data = await userModel.findOne({
+ username: req.body.usernameFromFront,
+ token: req.body.token
+ });
+ 
+if(data === null){ 
+  
+    var newUser = new userModel({
+      username: req.body.usernameFromFront,
+      token: uid2(32),
+    });
+    // console.log("usernameFromFront : ", req.body.usernameFromFront)
+
+  var saveUser = await newUser.save();
+
+    if(saveUser){
+      result = true;
+      token = saveUser.token;
+    }}
+ 
+  res.json({result, saveUser, token});
+  // console.log(token)
+
+});
 
 // /* Enregistrement de l'humeur/activités */
 // router.post('/mood', function(req, res, next) {
