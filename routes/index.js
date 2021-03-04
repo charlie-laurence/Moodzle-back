@@ -26,6 +26,8 @@ router.post('/sign-up', async function(req, res, next) {
  username: req.body.usernameFromFront,
  token: req.body.token
  });
+ console.log("TOKEN :", req.body.token)
+
  
 if(data === null){ 
   
@@ -43,7 +45,6 @@ if(data === null){
     }}
  
   res.json({result, saveUser, token});
-  // console.log(token)
 
 });
 
@@ -55,14 +56,28 @@ if(data === null){
 //   res.json(result, token);
 // });
 
-// /* Réaction de Moodz */
-// router.get('/fun-fact', function(req, res, next) {
-//   var result = false;
-//   var moodOfTheDay = /*récupère le score du mood du jour*/
-//   //var token = user.token;
-//   /* récupère un fun-fact lié au score du mood + result = true*/
-//   res.json(result, token, moodOfTheDay);
-// });
+/* Réaction de Moodz */
+router.get('/fun-fact', async function(req, res, next) {
+  var result = false;
+
+  const dataFunFact = await funfactModel.find(
+    { mood_score: 2 });
+  console.log("dataFunFact :", dataFunFact);
+
+
+
+  // var moodOfTheDay = /*récupère le score du mood du jour*/
+  //var token = user.token;
+  /* récupère un fun-fact lié au score du mood + result = true*/
+
+
+  res.json(result, dataFunFact);
+
+});
+
+
+
+
 
 // /* History */
 // router.get('/history', function(req, res, next) {
