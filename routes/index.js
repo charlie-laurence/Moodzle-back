@@ -232,7 +232,7 @@ router.post("/history", async function (req, res, next) {
 
 /* Dashboard (récupère tout history du user : */
 router.get("/dashboard", async function (req, res, next) {
-  var userHistory = await userModel.findOne({token: 'UvEs7slg2Wl54GO2QHESZko0DheTgpPF'})
+  var userHistory = await userModel.findOne({token: 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})
   .populate({
     path : 'history',
     populate : {path : 'activity'}
