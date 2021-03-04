@@ -117,20 +117,18 @@ router.post("/add-activity", async (req, res, next) => {
 
 /* Réaction de Moodz */
 router.get('/fun-fact', async function(req, res, next) {
-  var result = false;
 
-  const dataFunFact = await funfactModel.find(
-    { mood_score: 2 });
+  const dataFunFact = await funfactModel.find();
   console.log("dataFunFact :", dataFunFact);
 
-
+  // const moodOfTheDay = await userModel
+  
 
   // var moodOfTheDay = /*récupère le score du mood du jour*/
   //var token = user.token;
   /* récupère un fun-fact lié au score du mood + result = true*/
 
-
-  res.json(result, dataFunFact);
+  res.json({ dataFunFact });
 
 });
 
