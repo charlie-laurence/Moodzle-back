@@ -6,6 +6,7 @@ var userModel = require("../models/users");
 var funfactModel = require("../models/funfacts");
 var mongoose = require("mongoose");
 var uid2 = require("uid2");
+const { route } = require("./users");
 const activityList = [
   { category: "sport", name: "football" },
   { category: "social", name: "boire un verre" },
@@ -26,34 +27,32 @@ router.get("/load-activities", async function (req, res, next) {
 
 /* Enregistrement du userName et du token en BDD */
 
-router.post('/sign-up', async function(req, res, next) {
-  
+router.post("/sign-up", async function (req, res, next) {
   var result = false;
   var token = null;
 
- const data = await userModel.findOne({
- username: req.body.usernameFromFront,
- token: req.body.token
- });
- 
-if(data === null){ 
-  
+  const data = await userModel.findOne({
+    username: req.body.usernameFromFront,
+    token: req.body.token,
+  });
+
+  if (data === null) {
     var newUser = new userModel({
       username: req.body.usernameFromFront,
       token: uid2(32),
     });
     // console.log("usernameFromFront : ", req.body.usernameFromFront)
 
-  var saveUser = await newUser.save();
+    var saveUser = await newUser.save();
 
-    if(saveUser){
+    if (saveUser) {
       result = true;
       token = saveUser.token;
-    }}
- 
-  res.json({result, saveUser, token});
-  // console.log(token)
+    }
+  }
 
+  res.json({ result, saveUser, token });
+  // console.log(token)
 });
 
 // /* Enregistrement de l'humeur/activités */
@@ -188,11 +187,14 @@ router.post("/history", async function (req, res, next) {
       var lastDay = new Date(date.getFullYear(), 11, 31);
       break;
     default:
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7);
+      var firstDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() - date.getDay() - 7
+      );
       var lastDay = date;
       break;
   }
-<<<<<<< HEAD
 
   console.log(firstDay);
   console.log(lastDay);
@@ -206,28 +208,20 @@ router.post("/history", async function (req, res, next) {
       populate: { path: "activity" },
     })
     .exec();
-
-  // console.log('history',moodsHistory.history)
-  // console.log('activity',moodsHistory.history[0].activity)
-
-  // var firstDayMonth = new Date(date. getFullYear(), date. getMonth(), 1);
-  // var lastDayMonth = new Date(date. getFullYear(), date. getMonth() + 1, 0)
-
-  /* récupère tous les mood/activities + result = true*/
-=======
-  
-  console.log(firstDay)
-  console.log(lastDay)
-// Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
-
-  var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
-  .populate({
-    path : 'history',
-    match : {date : {$gte: firstDay, $lte: lastDay} } ,
-    populate : {path : 'activity'}
-  }).exec();
->>>>>>> b8a55e03ba9e63396ada787ae75a44b4c8cca636
   res.json(moodsHistory);
 });
+
+router.get("/mood/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const mood = await moodModel.findById(id);
+    console.log(mood);
+    res.json(mood);
+  } catch (err) {
+    res.json(err);
+  }
+});
+
+// 603cc28edefe690bcc21d4f5
 
 module.exports = router;
