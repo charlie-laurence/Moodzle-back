@@ -230,4 +230,14 @@ router.post("/history", async function (req, res, next) {
   res.json(moodsHistory);
 });
 
+/* Dashboard (récupère tout history du user : */
+router.get("/dashboard", async function (req, res, next) {
+  var userHistory = await userModel.findOne({token: 'UvEs7slg2Wl54GO2QHESZko0DheTgpPF'})
+  .populate({
+    path : 'history',
+    populate : {path : 'activity'}
+  }).exec();
+  res.json(userHistory);
+});
+
 module.exports = router;
