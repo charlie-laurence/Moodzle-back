@@ -8,11 +8,11 @@ var mongoose = require("mongoose");
 var uid2 = require("uid2");
 const { route } = require("./users");
 const activityList = [
-  { category: "sport", name: "football" },
-  { category: "social", name: "boire un verre" },
-  { category: "culture", name: "cinema" },
-  { category: "culture", name: "piano" },
-  { category: "sport", name: "piscine" },
+  { category: "sport", name: "Football" },
+  { category: "social", name: "Boire un verre" },
+  { category: "culture", name: "Cinema" },
+  { category: "culture", name: "Piano" },
+  { category: "sport", name: "Piscine" },
 ];
 
 /* GET home page. */
@@ -30,51 +30,51 @@ router.get("/load-activities", async function (req, res, next) {
 router.post("/sign-up", async function (req, res, next) {
   var result = false;
   var token = null;
-
   const data = await userModel.findOne({
     username: req.body.usernameFromFront,
     token: req.body.token,
   });
-
   if (data === null) {
     var newUser = new userModel({
       username: req.body.usernameFromFront,
       token: uid2(32),
     });
-    // console.log("usernameFromFront : ", req.body.usernameFromFront)
-
     var saveUser = await newUser.save();
-
     if (saveUser) {
       result = true;
       token = saveUser.token;
     }
   }
-
   res.json({ result, saveUser, token });
-  // console.log(token)
 });
 
 /* Enregistrement de l'humeur/activités :*/
 router.post("/save-mood", async (req, res, next) => {
   const mood = req.body.mood;
   const activity = req.body.activitySelection;
-  var token = "UvEs7slg2Wl54GO2QHESZko0DheTgpPF"; //req.body.token;
+  var token = req.body.token;
 
   // récupérer les id des activités :
   async function getAllId(activity) {
-    let idTab = [];
-    for (var i = 0; i < activity.length; i++) {
-      let activityFromMongo = await activityModel.findOne({
-        name: activity[i].name,
-        category: activity[i].category,
-      });
-      let id = activityFromMongo._id;
-      idTab.push(id);
+    try {
+      let idTab = [];
+      for (var i = 0; i < activity.length; i++) {
+        let activityFromMongo = await activityModel.findOne({
+          name: activity[i].name,
+          category: activity[i].category,
+        });
+        let id = activityFromMongo._id;
+        idTab.push(id);
+      }
+      return idTab;
+    } catch (err) {
+      console.log(err);
+      return err;
     }
-    return idTab;
   }
+
   let activitiesId = await getAllId(activity);
+  console.log(activitiesId);
 
   // enregistrement du mood en bdd :
   const newMood = new moodModel({
@@ -98,12 +98,18 @@ router.post("/save-mood", async (req, res, next) => {
 router.post("/add-activity", async (req, res, next) => {
   try {
     const { name, category } = req.body;
-    const newActivity = new activityModel({
-      name,
-      category,
-    });
-    const savedActivity = await newActivity.save();
-    res.json(savedActivity);
+    const resultFromDb = await activityModel.findOne({ name, category });
+    console.log(resultFromDb);
+    if (!resultFromDb) {
+      const newActivity = new activityModel({
+        name,
+        category,
+      });
+      const savedActivity = await newActivity.save();
+      res.json(savedActivity);
+    } else {
+      res.json({ msg: `${name}-${category} déjà en base de données` });
+    }
   } catch (err) {
     res.json(err);
   }
@@ -245,7 +251,10 @@ router.post("/history", async function (req, res, next) {
 router.get("/mood/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const mood = await moodModel.findById(id);
+    const mood = await moodModel
+      .findById(id)
+      .populate({ path: "activity" })
+      .exec();
     console.log(mood);
     res.json(mood);
   } catch (err) {
