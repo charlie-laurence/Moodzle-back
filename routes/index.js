@@ -6,12 +6,16 @@ var userModel = require("../models/users");
 var funfactModel = require("../models/funfacts");
 var mongoose = require("mongoose");
 var uid2 = require("uid2");
+var bcrypt = require('bcrypt');
+
+const cost = 10;
+
 const activityList = [
-  { category: "sport", name: "football" },
-  { category: "social", name: "boire un verre" },
-  { category: "culture", name: "cinema" },
-  { category: "culture", name: "piano" },
-  { category: "sport", name: "piscine" },
+  { category: "sport", name: "Football" },
+  { category: "social", name: "Boire un verre" },
+  { category: "culture", name: "Cinema" },
+  { category: "culture", name: "Piano" },
+  { category: "sport", name: "Piscine" },
 ];
 
 /* GET home page. */
@@ -24,59 +28,175 @@ router.get("/load-activities", async function (req, res, next) {
   res.json(activityDataList);
 });
 
+router.get("/testpassword", async function(req, res, next) {
+  const hash = bcrypt.hashSync("abc", cost)
+  
+  await userModel.findByIdAndUpdate({_id: "603cc2c9ea48e108447d1e3c"}, {"email": "test@test.com"})
+  res.json({result: true})
+})
+
 /* Enregistrement du userName et du token en BDD */
 
-router.post('/sign-up', async function(req, res, next) {
-  
+router.post("/sign-up", async function (req, res, next) {
   var result = false;
   var token = null;
 
- const data = await userModel.findOne({
- username: req.body.usernameFromFront,
- token: req.body.token
- });
- 
-if(data === null){ 
-  
+  const hash = bcrypt.hashSync(req.body.password, cost);
+
+  const data = await userModel.findOne({
+    username: req.body.username,
+    email: req.body.email
+  });
+  if (data === null) {
     var newUser = new userModel({
-      username: req.body.usernameFromFront,
+      username: req.body.username,
       token: uid2(32),
+      email: req.body.email,
+      password: hash
     });
-    // console.log("usernameFromFront : ", req.body.usernameFromFront)
-
-  var saveUser = await newUser.save();
-
-    if(saveUser){
+    var saveUser = await newUser.save();
+    if (saveUser) {
       result = true;
       token = saveUser.token;
-    }}
- 
-  res.json({result, saveUser, token});
-  // console.log(token)
-
+    }
+  }
+  res.json({ result, saveUser, token });
 });
 
-// /* Enregistrement de l'humeur/activités */
+router.post("/sign-in", async function (req, res, next) {
+  var result = false;
+  var token = null;
+
+  try {
+  const data = await userModel.findOne({
+    email: req.body.email,
+  });
+  console.log(data)
+  const passwordCheck = bcrypt.compareSync(req.body.password, data.password)
+
+  if (passwordCheck) {
+    res.json({ result: true, msg: "login success", username: data.username, token: data.token });
+    }
+  else {
+    res.json({result: false, msg: "erreur login", err: "password pas bon"})
+  }
+  }
+  catch (err) {
+    res.json({result: false, msg: "erreur login", err: err.message });
+  }
+});
+
+
+// Enregistrement d'un mood (mood score, activité & date)
 router.post("/save-mood", async (req, res, next) => {
-  const { mood, selectActivity } = req.body;
-  console.log(mood, selectActivity);
-  //var token = user.token;
-  /*Récupère le score du mood (enregistré dans le store) et les activités + enregistrement en bdd + result = true*/
-  res.json({ msg: "requête bien reçue et exécutée" });
+  try {
+    const token = req.body.token;
+    const storedMoodId = req.body.storedMoodId;
+    console.log(storedMoodId);
+    const mood = req.body.mood;
+    const activity = req.body.activitySelection;
+
+    let activitiesId = await getAllId(activity);
+    console.log(activitiesId);
+
+    //Traitement pour gérer l'existence d'un mood pour le jour ou non :
+    //Si aucun mood renseigné pour la journée -> création d'un nouveau mood et ajout à l'utilisateur
+    //Si un mood a déjà été renseigné -> update du mood dans le document de l'utilisateur
+
+    if (!storedMoodId) {
+      // enregistrement du mood en bdd :
+      const newMood = new moodModel({
+        date: new Date(),
+        mood_score: mood,
+        activity: activitiesId,
+      });
+      const savedMood = await newMood.save();
+      console.log(savedMood._id);
+      // on récupère l'id du mood créé :
+      const moodId = savedMood._id;
+      // on update le user en ajoutant l'id du mood/activités :
+      const updateUser = await userModel.updateOne(
+        { token },
+        { $push: { history: moodId } }
+      );
+      res.json({
+        msg: `mood ${moodId} créé avec succès pour l'utilisateur ${token}`,
+        moodId,
+        updateUser,
+      });
+    } else {
+      const updatingMood = await moodModel.updateOne(
+        { _id: storedMoodId },
+        { date: new Date(), mood_score: mood, activity: activitiesId }
+      );
+      res.json({
+        msg: `mood ${storedMoodId} mis à jour avec succès pour l'utilisateur ${token}`,
+        moodId: storedMoodId,
+        updatingMood,
+      });
+    }
+  } catch (err) {
+    res.json({ msg: "Erreur lors de la création du mood", err: err.message });
+  }
 });
 
-// Enregistrement Nouvelle Activité en base de données
+// Enregistrement d'une nouvelle activité en base de données
 router.post("/add-activity", async (req, res, next) => {
   try {
     const { name, category } = req.body;
-    const newActivity = new activityModel({
-      name,
-      category,
-    });
-    const savedActivity = await newActivity.save();
-    res.json(savedActivity);
+    const resultFromDb = await activityModel.findOne({ name, category });
+    console.log(resultFromDb);
+    if (!resultFromDb) {
+      const newActivity = new activityModel({
+        name,
+        category,
+      });
+      const savedActivity = await newActivity.save();
+      res.json(savedActivity);
+    } else {
+      res.json({ msg: `${name}-${category} déjà en base de données` });
+    }
   } catch (err) {
     res.json(err);
+  }
+});
+
+// Vérification de l'existence d'un mood enregistré le jour-même (route appelée au niveau du HomeScreen)
+router.get("/daily-mood/:token", async (req, res, next) => {
+  try {
+    const dateNow = new Date();
+    const dayNow = dateNow.getDate();
+    const monthNow = dateNow.getMonth();
+    const yearNow = dateNow.getFullYear();
+    const { token } = req.params;
+    const user = await userModel
+      .findOne({ token })
+      .populate({ path: "history", populate: { path: "activity" } })
+      .exec();
+    //Filtre sur l'historique de l'utilisateur afin de vérifier l'existence d'un mood enregistré ce-jour
+    const filteredHistory = user.history.filter(
+      (mood) =>
+        new Date(
+          mood.date.getFullYear(),
+          mood.date.getMonth(),
+          mood.date.getDate() + 1
+        ) >= new Date(yearNow, monthNow, dayNow + 1)
+    );
+    filteredHistory.length > 0
+      ? res.json({
+          mood: true,
+          mood_data: {
+            id: filteredHistory[0]._id,
+            score: filteredHistory[0].mood_score,
+            activity: filteredHistory[0].activity,
+          },
+        })
+      : res.json({ mood: false, data: null });
+  } catch (err) {
+    res.json({
+      msg: "Erreur lors de la vérification de l'existence d'un mood pour ajd",
+      err,
+    });
   }
 });
 
@@ -88,6 +208,28 @@ router.post("/add-activity", async (req, res, next) => {
 //   /* récupère un fun-fact lié au score du mood + result = true*/
 //   res.json(result, token, moodOfTheDay);
 // });
+/* Réaction de Moodz */
+router.post('/fun-fact', async function(req, res, next) {
+
+    // Récupération, en BDD, d'un tableau de FunFacts correspondant au score du mood récupéré depuis le front
+  const dataFunFact = await funfactModel.find(
+    {mood_score: req.body.mood}
+  );
+
+    // Traitement pour choisir un FunFact en aléatoire dans le tableau précédent
+  var thisFunFact = [Math.floor(Math.random()*dataFunFact.length)];
+
+    // Récupération du texte du FunFact en question
+  var funFact = dataFunFact[thisFunFact].text;
+
+    // Envoi du FunFact vers le Front
+  res.json(funFact);
+
+});
+
+
+
+
 
 // /* History */
 // router.get('/history', function(req, res, next) {
@@ -167,35 +309,27 @@ router.post("/history", async function (req, res, next) {
   var filterType = req.body.type;
 
   switch (filterType) {
-    case "month":
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    case 'month':
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1, 1).toISOString()
+      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 1, 1).toISOString()
       break;
-    case "week":
-      var firstDay = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate() - date.getDay() + 1
-      );
-      var lastDay = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate() - date.getDay() + 7
-      );
+    case 'week':
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 1, 1).toISOString()
+      var lastDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 7, 1).toISOString()
       break;
-    case "year":
-      var firstDay = new Date(date.getFullYear(), 0, 1);
-      var lastDay = new Date(date.getFullYear(), 11, 31);
+    case 'year':
+      var firstDay = new Date(date.getFullYear(), 0, 1, 1).toISOString()
+      var lastDay = new Date(date.getFullYear(), 11, 31, 1).toISOString()
       break;
     default:
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7);
-      var lastDay = date;
-      break;
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7, 1).toISOString()
+      var lastDay = date.toLocaleDateString(undefined);
+      break; 
   }
   
-  console.log(firstDay)
-  console.log(lastDay)
-// Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
+  // console.log(firstDay)
+  // console.log(lastDay)
+  // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
 
   var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
   .populate({
@@ -205,5 +339,53 @@ router.post("/history", async function (req, res, next) {
   }).exec();
   res.json(moodsHistory);
 });
+
+// FONCTIONS HELPER ET ROUTES TEST
+
+// Dashboard (récupère tout history du user : */
+router.get("/dashboard", async function (req, res, next) {
+  var userHistory = await userModel
+    .findOne({ token: "fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1" })
+    .populate({
+      path: "history",
+      populate: { path: "activity" },
+    })
+    .exec();
+  res.json(userHistory);
+});
+
+//Route test pour récupérer un mood spécifique (vérification du bon enregistrement en base de données)
+router.get("/mood/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const mood = await moodModel
+      .findById(id)
+      .populate({ path: "activity" })
+      .exec();
+    console.log(mood);
+    res.json(mood);
+  } catch (err) {
+    res.json(err);
+  }
+});
+
+//Fonction pour récupérer les id des activités en base de données (utilisée dans la route 'save-mood')
+async function getAllId(activity) {
+  try {
+    let idTab = [];
+    for (var i = 0; i < activity.length; i++) {
+      let activityFromMongo = await activityModel.findOne({
+        name: activity[i].name,
+        category: activity[i].category,
+      });
+      let id = activityFromMongo._id;
+      idTab.push(id);
+    }
+    return idTab;
+  } catch (err) {
+    console.log(err);
+    return err;
+  }
+}
 
 module.exports = router;
