@@ -2,7 +2,6 @@
 var mongoose = require('mongoose');
 
 var funfactSchema = mongoose.Schema({
-    rank: Number,
     text: String,
     mood_score: Number,
 });

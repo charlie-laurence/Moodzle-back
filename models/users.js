@@ -4,7 +4,9 @@ var mongoose = require('mongoose');
 var userSchema = mongoose.Schema({
     username: String,
     token: String,
-    history: [{type:mongoose.Schema.Types.ObjectId, ref: 'moods'}]
+    history: [{type:mongoose.Schema.Types.ObjectId, ref: 'moods'}],
+    email: String,
+    password: String
 });
 
 var userModel = mongoose.model('users', userSchema)
