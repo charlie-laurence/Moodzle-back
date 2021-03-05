@@ -30,7 +30,8 @@ router.get("/load-activities", async function (req, res, next) {
 
 router.get("/testpassword", async function(req, res, next) {
   const hash = bcrypt.hashSync("abc", cost)
-  await userModel.findByIdAndUpdate({_id: "603cc2c9ea48e108447d1e3c"}, {"password": hash})
+  
+  await userModel.findByIdAndUpdate({_id: "603cc2c9ea48e108447d1e3c"}, {"email": "test@test.com"})
   res.json({result: true})
 })
 
@@ -43,14 +44,14 @@ router.post("/sign-up", async function (req, res, next) {
   const hash = bcrypt.hashSync(req.body.password, cost);
 
   const data = await userModel.findOne({
-    username: req.body.usernameFromFront,
-    token: req.body.token,
-    password: hash
+    username: req.body.username,
+    email: req.body.email
   });
   if (data === null) {
     var newUser = new userModel({
-      username: req.body.usernameFromFront,
+      username: req.body.username,
       token: uid2(32),
+      email: req.body.email,
       password: hash
     });
     var saveUser = await newUser.save();
@@ -65,18 +66,16 @@ router.post("/sign-up", async function (req, res, next) {
 router.post("/sign-in", async function (req, res, next) {
   var result = false;
   var token = null;
-  const hash = bcrypt.hashSync(req.body.password, cost);
 
   try {
   const data = await userModel.findOne({
-    username: req.body.username,
-    token: req.body.token,
+    email: req.body.email,
   });
   console.log(data)
   const passwordCheck = bcrypt.compareSync(req.body.password, data.password)
 
   if (passwordCheck) {
-    res.json({ result: true, msg: "login success" });
+    res.json({ result: true, msg: "login success", username: data.username, token: data.token });
     }
   else {
     res.json({result: false, msg: "erreur login", err: "password pas bon"})
