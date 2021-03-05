@@ -116,19 +116,21 @@ router.post("/add-activity", async (req, res, next) => {
 });
 
 /* Réaction de Moodz */
-router.get('/fun-fact', async function(req, res, next) {
+router.post('/fun-fact', async function(req, res, next) {
 
-  const dataFunFact = await funfactModel.find();
-  console.log("dataFunFact :", dataFunFact);
+    // Récupération, en BDD, d'un tableau de FunFacts correspondant au score du mood récupéré depuis le front
+  const dataFunFact = await funfactModel.find(
+    {mood_score: req.body.mood}
+  );
 
-  // const moodOfTheDay = await userModel
-  
+    // Traitement pour choisir un FunFact en aléatoire dans le tableau précédent
+  var thisFunFact = [Math.floor(Math.random()*dataFunFact.length)];
 
-  // var moodOfTheDay = /*récupère le score du mood du jour*/
-  //var token = user.token;
-  /* récupère un fun-fact lié au score du mood + result = true*/
+    // Récupération du texte du FunFact en question
+  var funFact = dataFunFact[thisFunFact].text;
 
-  res.json({ dataFunFact });
+    // Envoi du FunFact vers le Front
+  res.json(funFact);
 
 });
 
