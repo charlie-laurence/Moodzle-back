@@ -147,26 +147,26 @@ router.post('/history', async function(req, res, next) {
 
   switch (filterType) {
     case 'month':
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1, 1).toISOString()
+      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 1, 1).toISOString()
       break;
     case 'week':
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 1)
-      var lastDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 7)
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 1, 1).toISOString()
+      var lastDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 7, 1).toISOString()
       break;
     case 'year':
-      var firstDay = new Date(date.getFullYear(), 0, 1);
-      var lastDay = new Date(date.getFullYear(), 11, 31);
+      var firstDay = new Date(date.getFullYear(), 0, 1, 1).toISOString()
+      var lastDay = new Date(date.getFullYear(), 11, 31, 1).toISOString()
       break;
     default:
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7);
-      var lastDay = date;
+      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7, 1).toISOString()
+      var lastDay = date.toLocaleDateString(undefined);
       break; 
   }
   
-  console.log(firstDay)
-  console.log(lastDay)
-// Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
+  // console.log(firstDay)
+  // console.log(lastDay)
+  // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
 
   var moodsHistory = await userModel.findOne({token : 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'})   
   .populate({
@@ -174,6 +174,8 @@ router.post('/history', async function(req, res, next) {
     match : {date : {$gte: firstDay, $lte: lastDay} } ,
     populate : {path : 'activity'}
   }).exec();
+  
+  // console.log(moodsHistory.history)
   res.json(moodsHistory);
 });
 
