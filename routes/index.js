@@ -48,53 +48,60 @@ router.post("/sign-up", async function (req, res, next) {
   res.json({ result, saveUser, token });
 });
 
-/* Enregistrement de l'humeur/activités :*/
+// Enregistrement d'un mood (mood score, activité & date)
 router.post("/save-mood", async (req, res, next) => {
-  const mood = req.body.mood;
-  const activity = req.body.activitySelection;
-  var token = req.body.token;
+  try {
+    const token = req.body.token;
+    const storedMoodId = req.body.storedMoodId;
+    console.log(storedMoodId);
+    const mood = req.body.mood;
+    const activity = req.body.activitySelection;
 
-  // récupérer les id des activités :
-  async function getAllId(activity) {
-    try {
-      let idTab = [];
-      for (var i = 0; i < activity.length; i++) {
-        let activityFromMongo = await activityModel.findOne({
-          name: activity[i].name,
-          category: activity[i].category,
-        });
-        let id = activityFromMongo._id;
-        idTab.push(id);
-      }
-      return idTab;
-    } catch (err) {
-      console.log(err);
-      return err;
+    let activitiesId = await getAllId(activity);
+    console.log(activitiesId);
+
+    //Traitement pour gérer l'existence d'un mood pour le jour ou non :
+    //Si aucun mood renseigné pour la journée -> création d'un nouveau mood et ajout à l'utilisateur
+    //Si un mood a déjà été renseigné -> update du mood dans le document de l'utilisateur
+
+    if (!storedMoodId) {
+      // enregistrement du mood en bdd :
+      const newMood = new moodModel({
+        date: new Date(),
+        mood_score: mood,
+        activity: activitiesId,
+      });
+      const savedMood = await newMood.save();
+      console.log(savedMood._id);
+      // on récupère l'id du mood créé :
+      const moodId = savedMood._id;
+      // on update le user en ajoutant l'id du mood/activités :
+      const updateUser = await userModel.updateOne(
+        { token },
+        { $push: { history: moodId } }
+      );
+      res.json({
+        msg: `mood ${moodId} créé avec succès pour l'utilisateur ${token}`,
+        moodId,
+        updateUser,
+      });
+    } else {
+      const updatingMood = await moodModel.updateOne(
+        { _id: storedMoodId },
+        { date: new Date(), mood_score: mood, activity: activitiesId }
+      );
+      res.json({
+        msg: `mood ${storedMoodId} mis à jour avec succès pour l'utilisateur ${token}`,
+        moodId: storedMoodId,
+        updatingMood,
+      });
     }
+  } catch (err) {
+    res.json({ msg: "Erreur lors de la création du mood", err: err.message });
   }
-
-  let activitiesId = await getAllId(activity);
-  console.log(activitiesId);
-
-  // enregistrement du mood en bdd :
-  const newMood = new moodModel({
-    date: new Date(),
-    mood_score: mood,
-    activity: activitiesId,
-  });
-  const savedMood = await newMood.save();
-  console.log(savedMood._id);
-  // on récupère l'id du mood créé :
-  const moodId = savedMood._id;
-  // on update le user en ajoutant l'id du mood/activités :
-  const updateUser = await userModel.updateOne(
-    { token },
-    { $push: { history: moodId } }
-  );
-  res.json({ msg: "requête bien reçue et exécutée", moodId, updateUser });
 });
 
-// Enregistrement Nouvelle Activité en base de données
+// Enregistrement d'une nouvelle activité en base de données
 router.post("/add-activity", async (req, res, next) => {
   try {
     const { name, category } = req.body;
@@ -112,6 +119,45 @@ router.post("/add-activity", async (req, res, next) => {
     }
   } catch (err) {
     res.json(err);
+  }
+});
+
+// Vérification de l'existence d'un mood enregistré le jour-même (route appelée au niveau du HomeScreen)
+router.get("/daily-mood/:token", async (req, res, next) => {
+  try {
+    const dateNow = new Date();
+    const dayNow = dateNow.getDate();
+    const monthNow = dateNow.getMonth();
+    const yearNow = dateNow.getFullYear();
+    const { token } = req.params;
+    const user = await userModel
+      .findOne({ token })
+      .populate({ path: "history", populate: { path: "activity" } })
+      .exec();
+    //Filtre sur l'historique de l'utilisateur afin de vérifier l'existence d'un mood enregistré ce-jour
+    const filteredHistory = user.history.filter(
+      (mood) =>
+        new Date(
+          mood.date.getFullYear(),
+          mood.date.getMonth(),
+          mood.date.getDate() + 1
+        ) >= new Date(yearNow, monthNow, dayNow + 1)
+    );
+    filteredHistory.length > 0
+      ? res.json({
+          mood: true,
+          mood_data: {
+            id: filteredHistory[0]._id,
+            score: filteredHistory[0].mood_score,
+            activity: filteredHistory[0].activity,
+          },
+        })
+      : res.json({ mood: false, data: null });
+  } catch (err) {
+    res.json({
+      msg: "Erreur lors de la vérification de l'existence d'un mood pour ajd",
+      err,
+    });
   }
 });
 
@@ -247,7 +293,9 @@ router.post("/history", async function (req, res, next) {
   res.json(moodsHistory);
 });
 
-//Route test pour récupérer un mood spécifique
+// FONCTIONS HELPER ET ROUTES TEST
+
+//Route test pour récupérer un mood spécifique (vérification du bon enregistrement en base de données)
 router.get("/mood/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -261,5 +309,24 @@ router.get("/mood/:id", async (req, res, next) => {
     res.json(err);
   }
 });
+
+//Fonction pour récupérer les id des activités en base de données (utilisée dans la route 'save-mood')
+async function getAllId(activity) {
+  try {
+    let idTab = [];
+    for (var i = 0; i < activity.length; i++) {
+      let activityFromMongo = await activityModel.findOne({
+        name: activity[i].name,
+        category: activity[i].category,
+      });
+      let id = activityFromMongo._id;
+      idTab.push(id);
+    }
+    return idTab;
+  } catch (err) {
+    console.log(err);
+    return err;
+  }
+}
 
 module.exports = router;
