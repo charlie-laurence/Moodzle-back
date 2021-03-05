@@ -365,6 +365,7 @@ router.post("/history", async function (req, res, next) {
   // console.log(firstDay)
   // console.log(lastDay)
   // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
+  // Token test_user 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'
 
   var moodsHistory = await userModel
     .findOne({ token: "fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1" })
@@ -374,8 +375,6 @@ router.post("/history", async function (req, res, next) {
       populate: { path: "activity" },
     })
     .exec();
-
-  // console.log(moodsHistory.history)
   res.json(moodsHistory);
 });
 
