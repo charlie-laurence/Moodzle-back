@@ -208,6 +208,28 @@ router.get("/daily-mood/:token", async (req, res, next) => {
 //   /* récupère un fun-fact lié au score du mood + result = true*/
 //   res.json(result, token, moodOfTheDay);
 // });
+/* Réaction de Moodz */
+router.post('/fun-fact', async function(req, res, next) {
+
+    // Récupération, en BDD, d'un tableau de FunFacts correspondant au score du mood récupéré depuis le front
+  const dataFunFact = await funfactModel.find(
+    {mood_score: req.body.mood}
+  );
+
+    // Traitement pour choisir un FunFact en aléatoire dans le tableau précédent
+  var thisFunFact = [Math.floor(Math.random()*dataFunFact.length)];
+
+    // Récupération du texte du FunFact en question
+  var funFact = dataFunFact[thisFunFact].text;
+
+    // Envoi du FunFact vers le Front
+  res.json(funFact);
+
+});
+
+
+
+
 
 // /* History */
 // router.get('/history', function(req, res, next) {
