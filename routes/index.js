@@ -6,7 +6,10 @@ var userModel = require("../models/users");
 var funfactModel = require("../models/funfacts");
 var mongoose = require("mongoose");
 var uid2 = require("uid2");
-const { route } = require("./users");
+var bcrypt = require('bcrypt');
+
+const cost = 10;
+
 const activityList = [
   { category: "sport", name: "Football" },
   { category: "social", name: "Boire un verre" },
@@ -25,19 +28,30 @@ router.get("/load-activities", async function (req, res, next) {
   res.json(activityDataList);
 });
 
+router.get("/testpassword", async function(req, res, next) {
+  const hash = bcrypt.hashSync("abc", cost)
+  await userModel.findByIdAndUpdate({_id: "603cc2c9ea48e108447d1e3c"}, {"password": hash})
+  res.json({result: true})
+})
+
 /* Enregistrement du userName et du token en BDD */
 
 router.post("/sign-up", async function (req, res, next) {
   var result = false;
   var token = null;
+
+  const hash = bcrypt.hashSync(req.body.password, cost);
+
   const data = await userModel.findOne({
     username: req.body.usernameFromFront,
     token: req.body.token,
+    password: hash
   });
   if (data === null) {
     var newUser = new userModel({
       username: req.body.usernameFromFront,
       token: uid2(32),
+      password: hash
     });
     var saveUser = await newUser.save();
     if (saveUser) {
@@ -47,6 +61,32 @@ router.post("/sign-up", async function (req, res, next) {
   }
   res.json({ result, saveUser, token });
 });
+
+router.post("/sign-in", async function (req, res, next) {
+  var result = false;
+  var token = null;
+  const hash = bcrypt.hashSync(req.body.password, cost);
+
+  try {
+  const data = await userModel.findOne({
+    username: req.body.username,
+    token: req.body.token,
+  });
+  console.log(data)
+  const passwordCheck = bcrypt.compareSync(req.body.password, data.password)
+
+  if (passwordCheck) {
+    res.json({ result: true, msg: "login success" });
+    }
+  else {
+    res.json({result: false, msg: "erreur login", err: "password pas bon"})
+  }
+  }
+  catch (err) {
+    res.json({result: false, msg: "erreur login", err: err.message });
+  }
+});
+
 
 // Enregistrement d'un mood (mood score, activité & date)
 router.post("/save-mood", async (req, res, next) => {
