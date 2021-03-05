@@ -295,6 +295,18 @@ router.post("/history", async function (req, res, next) {
 
 // FONCTIONS HELPER ET ROUTES TEST
 
+// Dashboard (récupère tout history du user : */
+router.get("/dashboard", async function (req, res, next) {
+  var userHistory = await userModel
+    .findOne({ token: "fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1" })
+    .populate({
+      path: "history",
+      populate: { path: "activity" },
+    })
+    .exec();
+  res.json(userHistory);
+});
+
 //Route test pour récupérer un mood spécifique (vérification du bon enregistrement en base de données)
 router.get("/mood/:id", async (req, res, next) => {
   try {
