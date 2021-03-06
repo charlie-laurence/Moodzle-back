@@ -6,7 +6,7 @@ var userModel = require("../models/users");
 var funfactModel = require("../models/funfacts");
 var mongoose = require("mongoose");
 var uid2 = require("uid2");
-var bcrypt = require('bcrypt');
+var bcrypt = require("bcrypt");
 
 const cost = 10;
 
@@ -28,12 +28,15 @@ router.get("/load-activities", async function (req, res, next) {
   res.json(activityDataList);
 });
 
-router.get("/testpassword", async function(req, res, next) {
-  const hash = bcrypt.hashSync("abc", cost)
-  
-  await userModel.findByIdAndUpdate({_id: "603cc2c9ea48e108447d1e3c"}, {"email": "test@test.com"})
-  res.json({result: true})
-})
+router.get("/testpassword", async function (req, res, next) {
+  const hash = bcrypt.hashSync("abc", cost);
+
+  await userModel.findByIdAndUpdate(
+    { _id: "603cc2c9ea48e108447d1e3c" },
+    { email: "test@test.com" }
+  );
+  res.json({ result: true });
+});
 
 /* Enregistrement du userName et du token en BDD */
 
@@ -45,14 +48,14 @@ router.post("/sign-up", async function (req, res, next) {
 
   const data = await userModel.findOne({
     username: req.body.username,
-    email: req.body.email
+    email: req.body.email,
   });
   if (data === null) {
     var newUser = new userModel({
       username: req.body.username,
       token: uid2(32),
       email: req.body.email,
-      password: hash
+      password: hash,
     });
     var saveUser = await newUser.save();
     if (saveUser) {
@@ -68,24 +71,26 @@ router.post("/sign-in", async function (req, res, next) {
   var token = null;
 
   try {
-  const data = await userModel.findOne({
-    email: req.body.email,
-  });
-  console.log(data)
-  const passwordCheck = bcrypt.compareSync(req.body.password, data.password)
+    const data = await userModel.findOne({
+      email: req.body.email,
+    });
+    console.log(data);
+    const passwordCheck = bcrypt.compareSync(req.body.password, data.password);
 
-  if (passwordCheck) {
-    res.json({ result: true, msg: "login success", username: data.username, token: data.token });
+    if (passwordCheck) {
+      res.json({
+        result: true,
+        msg: "login success",
+        username: data.username,
+        token: data.token,
+      });
+    } else {
+      res.json({ result: false, msg: "erreur login", err: "password pas bon" });
     }
-  else {
-    res.json({result: false, msg: "erreur login", err: "password pas bon"})
-  }
-  }
-  catch (err) {
-    res.json({result: false, msg: "erreur login", err: err.message });
+  } catch (err) {
+    res.json({ result: false, msg: "erreur login", err: err.message });
   }
 });
-
 
 // Enregistrement d'un mood (mood score, activité & date)
 router.post("/save-mood", async (req, res, next) => {
@@ -161,6 +166,19 @@ router.post("/add-activity", async (req, res, next) => {
   }
 });
 
+// Dashboard : récupère tout l'historique de l'utilisateur
+router.get("/dashboard/:token", async function (req, res, next) {
+  const { token } = req.params;
+  var userHistory = await userModel
+    .findOne({ token })
+    .populate({
+      path: "history",
+      populate: { path: "activity" },
+    })
+    .exec();
+  res.json(userHistory);
+});
+
 // Vérification de l'existence d'un mood enregistré le jour-même (route appelée au niveau du HomeScreen)
 router.get("/daily-mood/:token", async (req, res, next) => {
   try {
@@ -209,27 +227,19 @@ router.get("/daily-mood/:token", async (req, res, next) => {
 //   res.json(result, token, moodOfTheDay);
 // });
 /* Réaction de Moodz */
-router.post('/fun-fact', async function(req, res, next) {
+router.post("/fun-fact", async function (req, res, next) {
+  // Récupération, en BDD, d'un tableau de FunFacts correspondant au score du mood récupéré depuis le front
+  const dataFunFact = await funfactModel.find({ mood_score: req.body.mood });
 
-    // Récupération, en BDD, d'un tableau de FunFacts correspondant au score du mood récupéré depuis le front
-  const dataFunFact = await funfactModel.find(
-    {mood_score: req.body.mood}
-  );
+  // Traitement pour choisir un FunFact en aléatoire dans le tableau précédent
+  var thisFunFact = [Math.floor(Math.random() * dataFunFact.length)];
 
-    // Traitement pour choisir un FunFact en aléatoire dans le tableau précédent
-  var thisFunFact = [Math.floor(Math.random()*dataFunFact.length)];
-
-    // Récupération du texte du FunFact en question
+  // Récupération du texte du FunFact en question
   var funFact = dataFunFact[thisFunFact].text;
 
-    // Envoi du FunFact vers le Front
+  // Envoi du FunFact vers le Front
   res.json(funFact);
-
 });
-
-
-
-
 
 // /* History */
 // router.get('/history', function(req, res, next) {
@@ -309,24 +319,49 @@ router.post("/history", async function (req, res, next) {
   var filterType = req.body.type;
 
   switch (filterType) {
-    case 'month':
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), 1, 1).toISOString()
-      var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 1, 1).toISOString()
+    case "month":
+      var firstDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        1,
+        1
+      ).toISOString();
+      var lastDay = new Date(
+        date.getFullYear(),
+        date.getMonth() + 1,
+        1,
+        1
+      ).toISOString();
       break;
-    case 'week':
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 1, 1).toISOString()
-      var lastDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() + 7, 1).toISOString()
+    case "week":
+      var firstDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() - date.getDay() + 1,
+        1
+      ).toISOString();
+      var lastDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() - date.getDay() + 7,
+        1
+      ).toISOString();
       break;
-    case 'year':
-      var firstDay = new Date(date.getFullYear(), 0, 1, 1).toISOString()
-      var lastDay = new Date(date.getFullYear(), 11, 31, 1).toISOString()
+    case "year":
+      var firstDay = new Date(date.getFullYear(), 0, 1, 1).toISOString();
+      var lastDay = new Date(date.getFullYear(), 11, 31, 1).toISOString();
       break;
     default:
-      var firstDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay() - 7, 1).toISOString()
+      var firstDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() - date.getDay() - 7,
+        1
+      ).toISOString();
       var lastDay = date.toLocaleDateString(undefined);
-      break; 
+      break;
   }
-  
+
   // console.log(firstDay)
   // console.log(lastDay)
   // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
@@ -344,17 +379,21 @@ router.post("/history", async function (req, res, next) {
 // FONCTIONS HELPER ET ROUTES TEST
 
 // Dashboard (récupère tout history du user : */
-router.get("/dashboard", async function (req, res, next) {
+/*router.get("/dashboard", async function (req, res, next) {
   var userHistory = await userModel
     .findOne({ token: req.query.token})
+  var moodsHistory = await userModel
+    .findOne({ token: "fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1" })
     .populate({
       path: "history",
+      match: { date: { $gte: firstDay, $lte: lastDay } },
       populate: { path: "activity" },
     })
     .exec();
-  console.log(userHistory)
-  res.json(userHistory);
-});
+  res.json(moodsHistory);
+});*/
+
+// FONCTIONS HELPER ET ROUTES TEST
 
 //Route test pour récupérer un mood spécifique (vérification du bon enregistrement en base de données)
 router.get("/mood/:id", async (req, res, next) => {
