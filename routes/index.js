@@ -379,7 +379,7 @@ router.post("/history", async function (req, res, next) {
 // FONCTIONS HELPER ET ROUTES TEST
 
 // Dashboard (récupère tout history du user : */
-/*router.get("/dashboard", async function (req, res, next) {
+router.get("/dashboard", async function (req, res, next) {
   var userHistory = await userModel
     .findOne({ token: req.query.token})
   var moodsHistory = await userModel
@@ -391,7 +391,7 @@ router.post("/history", async function (req, res, next) {
     })
     .exec();
   res.json(moodsHistory);
-});*/
+});
 
 // FONCTIONS HELPER ET ROUTES TEST
 
