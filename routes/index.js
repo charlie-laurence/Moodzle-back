@@ -228,6 +228,28 @@ router.post('/fun-fact', async function(req, res, next) {
 });
 
 
+router.put('/modifications', async (req, res) => {
+
+  var usernameModified = req.body.username
+
+  var user = await userModel.findOne({ token: req.body.token });
+  var actualPassword = user.password
+
+
+   if(user.username != usernameModified){
+  await userModel.updateOne(
+    { token: req.body.token}, 
+    { username: usernameModified }
+ );
+ } 
+
+
+
+ console.log("us", actualPassword)
+
+
+  res.json({usernameModified, actualPassword})
+ })
 
 
 
@@ -338,7 +360,6 @@ router.post("/history", async function (req, res, next) {
     populate : {path : 'activity'}
   }).exec();
   
-  // console.log(moodsHistory.history)
   res.json(moodsHistory);
 });
 
