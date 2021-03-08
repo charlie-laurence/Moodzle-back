@@ -370,10 +370,24 @@ router.post("/history", async function (req, res, next) {
   // Token test_user 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'
 
   var moodsHistory = await userModel
-    .findOne({ token })
+    .findOne({ token: req.body.token })
     .populate({
       path: "history",
       match: { date: { $gte: firstDay, $lte: lastDay } },
+      populate: { path: "activity" },
+    })
+    .exec();
+  res.json(moodsHistory);
+});
+
+// FONCTIONS HELPER ET ROUTES TEST
+
+// Dashboard (récupère tout history du user : */
+router.get("/dashboard", async function (req, res, next) {
+  var moodsHistory = await userModel
+    .findOne({ token: req.query.token })
+    .populate({
+      path: "history",
       populate: { path: "activity" },
     })
     .exec();
