@@ -318,6 +318,8 @@ router.post("/history", async function (req, res, next) {
   var date = new Date(req.body.startdate);
   var filterType = req.body.type;
 
+  const { token } = req.body;
+
   switch (filterType) {
     case "month":
       var firstDay = new Date(
@@ -368,7 +370,7 @@ router.post("/history", async function (req, res, next) {
   // Token test_user 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'
 
   var moodsHistory = await userModel
-    .findOne({ token: "fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1" })
+    .findOne({ token })
     .populate({
       path: "history",
       match: { date: { $gte: firstDay, $lte: lastDay } },
