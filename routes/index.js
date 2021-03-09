@@ -23,23 +23,9 @@ router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
 });
 
-router.get("/load-activities", async function (req, res, next) {
-  var activityDataList = await activityModel.find();
-  res.json(activityDataList);
-});
+//////// HOME SCREEN ////////
 
-router.get("/testpassword", async function (req, res, next) {
-  const hash = bcrypt.hashSync("abc", cost);
-
-  await userModel.findByIdAndUpdate(
-    { _id: "603cc2c9ea48e108447d1e3c" },
-    { email: "test@test.com" }
-  );
-  res.json({ result: true });
-});
-
-/* Enregistrement du userName et du token en BDD */
-
+// Sign-up
 router.post("/sign-up", async function (req, res, next) {
   var result = false;
   var token = null;
@@ -66,6 +52,7 @@ router.post("/sign-up", async function (req, res, next) {
   res.json({ result, saveUser, token });
 });
 
+// Sign-In
 router.post("/sign-in", async function (req, res, next) {
   var result = false;
   var token = null;
@@ -91,6 +78,19 @@ router.post("/sign-in", async function (req, res, next) {
     res.json({ result: false, msg: "erreur login", err: err.message });
   }
 });
+
+// Route pour récupérer le pseudo de l'utilisateur à l'ouverture de l'application (quand local storage contient le token)
+router.get("/retrieve-user-info/:token", async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const user = await userModel.findOne({ token });
+    res.json(user.username);
+  } catch (err) {
+    res.json(err);
+  }
+});
+
+//////// MOOD SCREEN ////////
 
 // Enregistrement d'un mood (mood score, activité & date)
 router.post("/save-mood", async (req, res, next) => {
@@ -166,17 +166,10 @@ router.post("/add-activity", async (req, res, next) => {
   }
 });
 
-// Dashboard : récupère tout l'historique de l'utilisateur
-router.get("/dashboard/:token", async function (req, res, next) {
-  const { token } = req.params;
-  var userHistory = await userModel
-    .findOne({ token })
-    .populate({
-      path: "history",
-      populate: { path: "activity" },
-    })
-    .exec();
-  res.json(userHistory);
+// Récupération des activités enregistrées en base de données (pour peupler la recherche dans la ActivityBar)
+router.get("/load-activities", async function (req, res, next) {
+  var activityDataList = await activityModel.find();
+  res.json(activityDataList);
 });
 
 // Vérification de l'existence d'un mood enregistré le jour-même (route appelée au niveau du HomeScreen)
@@ -218,15 +211,7 @@ router.get("/daily-mood/:token", async (req, res, next) => {
   }
 });
 
-// /* Réaction de Moodz */
-// router.get('/fun-fact', function(req, res, next) {
-//   var result = false;
-//   var moodOfTheDay = /*récupère le score du mood du jour*/
-//   //var token = user.token;
-//   /* récupère un fun-fact lié au score du mood + result = true*/
-//   res.json(result, token, moodOfTheDay);
-// });
-/* Réaction de Moodz */
+// Réaction de Moodz
 router.post("/fun-fact", async function (req, res, next) {
   // Récupération, en BDD, d'un tableau de FunFacts correspondant au score du mood récupéré depuis le front
   const dataFunFact = await funfactModel.find({ mood_score: req.body.mood });
@@ -241,78 +226,25 @@ router.post("/fun-fact", async function (req, res, next) {
   res.json(funFact);
 });
 
-// /* History */
-// router.get('/history', function(req, res, next) {
-//   var result = false;
-//   /* récupère tous les mood/activities + result = true*/
-//   res.json(result);
-// });
-
-// /* Data */
-// router.post('/data', function(req, res, next) {
-//   var result = false;
-//   /* récupère tous les mood/activities + result = true*/
-//   res.json(result);
-// });
-
-// Route pour générer des activités
-router.get("/generate-activity", async function (req, res, next) {
-  for (var i = 0; i < activityList.length; i++) {
-    var newActivity = new activityModel({
-      _id: new mongoose.Types.ObjectId(),
-      name: activityList[i].name,
-      category: activityList[i].category,
-    });
-
-    var acitivitySave = await newActivity.save();
+// Dashboard : récupère tout l'historique de l'utilisateur
+router.get("/dashboard/:token", async function (req, res, next) {
+  try {
+    const { token } = req.params;
+    var userHistory = await userModel
+      .findOne({ token })
+      .populate({
+        path: "history",
+        populate: { path: "activity" },
+      })
+      .exec();
+    res.json(userHistory);
+  } catch (err) {
+    res.json(err);
   }
-  res.render("index", { title: "Express" });
 });
 
-router.get("/generate-data", async function (req, res, next) {
-  var moodListID = [];
+//////// CHARTS SCREEN ////////
 
-  var startDate = new Date("2020-01-01");
-  var now = new Date();
-
-  // Générer les historiques avec un score aléatoire (allant de 1 à 5)
-  for (var i = startDate; i < now; i.setDate(i.getDate() + 1)) {
-    var activityIDList = [];
-    var rndActivityCt = Math.floor(Math.random() * Math.floor(2)) + 1;
-
-    for (var j = 0; j < rndActivityCt; j++) {
-      var activityName =
-        activityList[Math.round(Math.random() * Math.floor(4))].name;
-      var activityFind = await activityModel.findOne({ name: activityName });
-      activityIDList.push(activityFind._id);
-    }
-
-    // Ajout des moods score entre
-    var newMood = new moodModel({
-      _id: new mongoose.Types.ObjectId(),
-      date: new Date(i),
-      mood_score: Math.round(Math.random() * Math.floor(4)) + 1,
-    });
-
-    newMood.activity = activityIDList;
-
-    moodListID.push(newMood._id);
-
-    var moodSave = await newMood.save();
-  }
-
-  var newUser = new userModel({
-    username: "test_user",
-    token: uid2(32),
-    history: moodListID,
-  });
-
-  var userSave = await newUser.save();
-
-  res.render("index", { title: "Express" });
-});
-
-/* History */
 router.post("/history", async function (req, res, next) {
   var result = false;
   var date = new Date(req.body.startdate);
@@ -364,11 +296,6 @@ router.post("/history", async function (req, res, next) {
       break;
   }
 
-  // console.log(firstDay)
-  // console.log(lastDay)
-  // Populate multiple level et trouver des dates gte (greater than) la date de début souhaité et lge (lower than) date de fin
-  // Token test_user 'fT26ZkBbbsVF7BSDl5Z2HsMDbdJqXVC1'
-
   var moodsHistory = await userModel
     .findOne({ token: req.body.token })
     .populate({
@@ -380,23 +307,51 @@ router.post("/history", async function (req, res, next) {
   res.json(moodsHistory);
 });
 
-// FONCTIONS HELPER ET ROUTES TEST
+//////// SETTINGS SCREEN ////////
 
-// Dashboard (récupère tout history du user : */
-router.get("/dashboard", async function (req, res, next) {
-  var moodsHistory = await userModel
-    .findOne({ token: req.query.token })
-    .populate({
-      path: "history",
-      populate: { path: "activity" },
-    })
-    .exec();
-  res.json(moodsHistory);
+router.put("/modifications", async (req, res) => {
+  try {
+    var usernameModified = req.body.username;
+    var user = await userModel.findOne({ token: req.body.token });
+    console.log("check");
+    // Récupération des values de l'input pour modifier le mdp
+    var actualPasswordFromFront = req.body.actualPassword;
+    var newPassword = req.body.newPassword;
+    var confirmedPassword = req.body.confirmedPassword;
+    var newPasswordCrypted = bcrypt.hashSync(newPassword, cost);
+    //compare mot de passe envoyé et mot de passe de bdd
+    const passwordCheck = bcrypt.compareSync(
+      actualPasswordFromFront,
+      user.password
+    );
+
+    // Mise à jour de la base de données (username ou password)
+    if (user.username != usernameModified) {
+      await userModel.updateOne(
+        { token: req.body.token },
+        { username: usernameModified }
+      );
+    } else if (passwordCheck && newPassword == confirmedPassword) {
+      await userModel.updateOne(
+        { token: req.body.token },
+        { password: newPasswordCrypted }
+      );
+
+      console.log("user", user.password);
+      console.log("pseudo", newPasswordCrypted);
+    }
+
+    res.json({ usernameModified, userPassword: user.password });
+  } catch (err) {
+    console.log("check");
+
+    res.json(err);
+  }
 });
 
-// FONCTIONS HELPER ET ROUTES TEST
+////////////////// FONCTIONS HELPER ET ROUTES TEST
 
-//Route test pour récupérer un mood spécifique (vérification du bon enregistrement en base de données)
+// Route test pour récupérer un mood spécifique (vérification du bon enregistrement en base de données)
 router.get("/mood/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -411,7 +366,18 @@ router.get("/mood/:id", async (req, res, next) => {
   }
 });
 
-//Fonction pour récupérer les id des activités en base de données (utilisée dans la route 'save-mood')
+// Route test pour les mots de passes (comparaison des hash)
+router.get("/testpassword", async function (req, res, next) {
+  const hash = bcrypt.hashSync("abc", cost);
+
+  await userModel.findByIdAndUpdate(
+    { _id: "603cc2c9ea48e108447d1e3c" },
+    { email: "test@test.com" }
+  );
+  res.json({ result: true });
+});
+
+// Fonction pour récupérer les id des activités en base de données (utilisée dans la route 'save-mood')
 async function getAllId(activity) {
   try {
     let idTab = [];
@@ -429,5 +395,65 @@ async function getAllId(activity) {
     return err;
   }
 }
+
+//////////////////  PROCEDURE INITIALE POUR REMPLIR LA BASE DE DONNEES AVEC UTILISATEUR TEST
+
+// Route pour générer des activités
+router.get("/generate-activity", async function (req, res, next) {
+  for (var i = 0; i < activityList.length; i++) {
+    var newActivity = new activityModel({
+      _id: new mongoose.Types.ObjectId(),
+      name: activityList[i].name,
+      category: activityList[i].category,
+    });
+
+    var acitivitySave = await newActivity.save();
+  }
+  res.render("index", { title: "Express" });
+});
+
+// Route pour générer les données
+router.get("/generate-data", async function (req, res, next) {
+  var moodListID = [];
+
+  var startDate = new Date("2020-01-01");
+  var now = new Date();
+
+  // Générer les historiques avec un score aléatoire (allant de 1 à 5)
+  for (var i = startDate; i < now; i.setDate(i.getDate() + 1)) {
+    var activityIDList = [];
+    var rndActivityCt = Math.floor(Math.random() * Math.floor(2)) + 1;
+
+    for (var j = 0; j < rndActivityCt; j++) {
+      var activityName =
+        activityList[Math.round(Math.random() * Math.floor(4))].name;
+      var activityFind = await activityModel.findOne({ name: activityName });
+      activityIDList.push(activityFind._id);
+    }
+
+    // Ajout des moods score entre
+    var newMood = new moodModel({
+      _id: new mongoose.Types.ObjectId(),
+      date: new Date(i),
+      mood_score: Math.round(Math.random() * Math.floor(4)) + 1,
+    });
+
+    newMood.activity = activityIDList;
+
+    moodListID.push(newMood._id);
+
+    var moodSave = await newMood.save();
+  }
+
+  var newUser = new userModel({
+    username: "test_user",
+    token: uid2(32),
+    history: moodListID,
+  });
+
+  var userSave = await newUser.save();
+
+  res.render("index", { title: "Express" });
+});
 
 module.exports = router;
