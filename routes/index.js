@@ -241,7 +241,6 @@ router.post("/fun-fact", async function (req, res, next) {
   res.json(funFact);
 });
 
-<<<<<<< HEAD
 
 router.put('/modifications', async (req, res) => {
 
@@ -285,8 +284,6 @@ router.put('/modifications', async (req, res) => {
 
 
 
-=======
->>>>>>> fd9704bfd500f7417d4b12663d4508be39f2d81b
 // /* History */
 // router.get('/history', function(req, res, next) {
 //   var result = false;
@@ -419,10 +416,7 @@ router.post("/history", async function (req, res, next) {
     match : {date : {$gte: firstDay, $lte: lastDay} } ,
     populate : {path : 'activity'}
   }).exec();
-<<<<<<< HEAD
   
-=======
->>>>>>> fd9704bfd500f7417d4b12663d4508be39f2d81b
   res.json(moodsHistory);
 });
 
