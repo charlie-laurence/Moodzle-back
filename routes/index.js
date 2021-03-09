@@ -230,25 +230,42 @@ router.post('/fun-fact', async function(req, res, next) {
 
 router.put('/modifications', async (req, res) => {
 
-  var usernameModified = req.body.username
+  try {  
+    var usernameModified = req.body.username
+    var user = await userModel.findOne({ token: req.body.token });
+    console.log('check')
+    // Récupération des values de l'input pour modifier le mdp
+    var actualPasswordFromFront = req.body.actualPassword;
+    var newPassword = req.body.newPassword;
+    var confirmedPassword = req.body.confirmedPassword;
+    var newPasswordCrypted = bcrypt.hashSync(newPassword, cost)
+    //compare mot de passe envoyé et mot de passe de bdd
+    const passwordCheck = bcrypt.compareSync(actualPasswordFromFront, user.password)
+    
+    // Mise à jour de la base de données (username ou password)
+     if(user.username != usernameModified){
+    await userModel.updateOne(
+      { token: req.body.token}, 
+      { username: usernameModified }
+   ); 
+   } else if (passwordCheck && newPassword == confirmedPassword) {
+    await userModel.updateOne(
+      { token: req.body.token}, 
+      { password: newPasswordCrypted }
+    )
+    
+    console.log('user', user.password)
+    console.log('pseudo', newPasswordCrypted)
+   }
+  
+  res.json({usernameModified, userPassword : user.password})
 
-  var user = await userModel.findOne({ token: req.body.token });
-  var actualPassword = user.password
+  } catch (err) {
+    console.log('check')
 
+    res.json(err);
+  }
 
-   if(user.username != usernameModified){
-  await userModel.updateOne(
-    { token: req.body.token}, 
-    { username: usernameModified }
- );
- } 
-
-
-
- console.log("us", actualPassword)
-
-
-  res.json({usernameModified, actualPassword})
  })
 
 
